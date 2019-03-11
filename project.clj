@@ -7,6 +7,7 @@
                  [compojure "1.6.1"]
                  [javax.servlet/servlet-api "2.5"]
                  [ring/ring-json "0.4.0"]
+                 [clj-time "0.15.0"]
                  [org.clojure/data.json "0.2.6"]]
   :main ^:skip-aot checking-account.core
   :target-path "target/%s"

@@ -6,17 +6,17 @@
               [ring.middleware.json :as middleware]
               [clojure.data.json :as json]))
 
-(defn build-json
+(defn build-response
   [params]
   (let [response{:status 200
                  :headers {"Conten-Type" "application/json"}
-                 :body (json/write-str params)}]
+                 :body params}]
     response))
 
 (defroutes app-routes
   (GET "/" [] "<h1>Checking Account</h1>")
   (POST "/accounts" []
-    (build-json {:id (create-account @accounts-db)}))
+    (build-response {:id (create-account @accounts-db)}))
 
   (context "/accounts/:id" [id]
    (GET "/get-balance" [] (-> @accounts-db
@@ -24,11 +24,13 @@
                              (get :tx-ids)
                              (deref)
                              (get-balance)
-                             (build-json)))
-           
-    (POST "/transaction" req (-> (create-transaction @transactions-db (read-string id) (get-in req [:body]))
-                                 (build-json))))
+                             (build-response)))
 
+    (POST "/transaction" req (-> (create-transaction @transactions-db (read-string id) (get-in req [:body]))
+                                 (build-response)))
+
+    (GET "/negative-periods" [] (-> (negative-periods @transactions-db (get-account-by-id @accounts-db id))
+                                    (build-response))))
   (route/not-found "<h1>Page not found</h1>"))
 
   (def app
