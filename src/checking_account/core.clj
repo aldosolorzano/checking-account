@@ -4,7 +4,7 @@
             [clj-time.local :as l]
             [clj-time.format :as f]))
 
-(def accounts-db (atom {100 {:id 100 :tx-ids (atom [0 1 2 3 4 5])}
+(def accounts-db (atom {100 {:id 100 :tx-ids (atom [0 1 2 3 4 5 6])}
                      101 {:id 101 :tx-ids (atom [])}}))
 
 (def transactions-db (atom [{:id 0 :account 100 :description "Deposit"
@@ -18,10 +18,10 @@
                          {:id 4 :account 100 :description "Purchase of a flight"
                             :amount 800 :date "18/10" :type :purchase}
                          {:id 5 :account 100 :description "Purchase of a expresso"
-                            :amount 10 :date "22/10" :type :purchase}]))
+                            :amount 10 :date "22/10" :type :purchase}
+                         {:id 6 :account 100 :description "Deposit"
+                            :amount 100 :date "25/10" :type :deposit}]))
 
-(def statement-like { "10/5" {:date "10/5" :txs (atom ["Purchase on amazon 33.4", "Deposit"]) :balance 1234}
-                     101 {:id 101 :tx-ids (atom [])}})
 (defn create-account
   [accounts]
   (let [new-id (if (empty? accounts) 100 (inc (first (last accounts))))
@@ -103,3 +103,41 @@
    (compute-balance transactions (deref (account :tx-ids)))
    (last (map (fn [id] (get transactions id)) (deref (account :tx-ids)))))
   )
+
+(defn build-statement
+  [transactions account]
+  (let [tx-ids (deref (get account :tx-ids))
+        account-txs (map (fn [id] (get transactions id)) tx-ids)]
+        (loop [remaining account-txs
+               results {}]
+          (if (empty? remaining)
+            results
+            (do (let [tx (first remaining)
+                  date (get tx :date)
+                  next-remaining (rest remaining)
+                  next-results (if (= (get results date) nil)
+                            (conj results {date { :tx-ids (atom [(tx :id)]):transactions (atom [(string/join " " [(tx :description) (tx :amount)])]) }})
+                            (do
+                              (swap! (get-in results [date :transactions]) conj (string/join " " [(tx :description) (tx :amount)]))
+                              (swap! (get-in results [date :tx-ids]) conj (tx :id))
+                              results))]
+              (recur next-remaining next-results)))))))
+
+(defn add-balance-to-statement
+  [transactions statement]
+  (let [balances (reduce (fn [new tx]
+                          (let [prev-balance (if (nil? (last new)) 0 (last new))]
+                          (conj new (+ prev-balance(compute-balance transactions (deref ((last tx) :tx-ids))))))) [] statement)]
+      (loop [remaining statement
+        results {}
+          i 0]
+          (if (empty? remaining)
+          results
+          (do (let [tx (first remaining)
+                next-remaining (rest remaining)
+                next-results (conj results {(first tx) {:transactions (deref ((last tx) :transactions)) :balance (format "%.2f"  (float (get balances i)))}})]
+          (recur next-remaining next-results (inc i))))))))
+
+(defn get-statement
+  [transactions account]
+  (add-balance-to-statement @transactions-db (build-statement transactions account)))

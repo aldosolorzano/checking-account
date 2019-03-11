@@ -3,8 +3,7 @@
               [compojure.core :refer :all]
               [compojure.route :as route]
               [compojure.handler :as handler]
-              [ring.middleware.json :as middleware]
-              [clojure.data.json :as json]))
+              [ring.middleware.json :as middleware]))
 
 (defn build-response
   [params]
@@ -30,7 +29,10 @@
                                  (build-response)))
 
     (GET "/negative-periods" [] (-> (negative-periods @transactions-db (get-account-by-id @accounts-db id))
+                                    (build-response)))
+    (GET "/statement" [] (-> (get-statement @transactions-db (get-account-by-id @accounts-db id))
                                     (build-response))))
+
   (route/not-found "<h1>Page not found</h1>"))
 
   (def app
