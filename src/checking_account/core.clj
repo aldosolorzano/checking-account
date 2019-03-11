@@ -2,25 +2,43 @@
   (:require [clojure.string :as string]
             [clj-time.core :as t]
             [clj-time.local :as l]
-            [clj-time.format :as f]))
+            [clj-time.format :as f]
+            [clj-time.coerce :as c]))
+; Date functions
+(def custom-formatter (f/formatter "dd/MM"))
+
+(defn parse-date
+  [date]
+  (c/to-long (f/parse custom-formatter date)))
+
+(defn unparse-date
+  [date]
+  (f/unparse custom-formatter (c/from-long date)))
+
+(defn format-float
+  [number]
+    (format "%.2f"  (float number)))
 
 (def accounts-db (atom {100 {:id 100 :tx-ids (atom [0 1 2 3 4 5 6])}
                      101 {:id 101 :tx-ids (atom [])}}))
 
 (def transactions-db (atom [{:id 0 :account 100 :description "Deposit"
-                          :amount 1000 :date "15/10" :type :deposit}
+                          :amount 1000 :date (parse-date "15/10") :type :deposit}
                           {:id 1 :account 100 :description "Purchase on Amazon"
-                            :amount 3.34 :date "16/10" :type :purchase}
+                            :amount 3.34 :date (parse-date "16/10") :type :purchase}
                          {:id 2 :account 100 :description "Purchase on Uber"
-                            :amount 45.23 :date "16/10" :type :purchase}
+                            :amount 45.23 :date (parse-date "16/10") :type :purchase}
                          {:id 3 :account 100 :description "Withdrawal"
-                            :amount 180 :date "17/10" :type :withdrawal}
+                            :amount 180 :date (parse-date "17/10") :type :withdrawal}
                          {:id 4 :account 100 :description "Purchase of a flight"
-                            :amount 800 :date "18/10" :type :purchase}
+                            :amount 800 :date (parse-date "18/10") :type :purchase}
                          {:id 5 :account 100 :description "Purchase of a expresso"
-                            :amount 10 :date "22/10" :type :purchase}
+                            :amount 10 :date (parse-date "22/10") :type :purchase}
                          {:id 6 :account 100 :description "Deposit"
-                            :amount 100 :date "25/10" :type :deposit}]))
+                            :amount 100 :date (parse-date "10/10") :type :deposit}]))
+(defn sort-by-date
+  [transactions]
+  (sort-by :date < transactions))
 
 (defn create-account
   [accounts]
@@ -32,7 +50,7 @@
 (defn create-transaction
   [transactions account-id params]
   (let [new-id (if (empty? transactions) 0 (inc (get (last transactions) :id)))
-        tx (conj {:id new-id :account account-id :date (t/now)} (update params :type keyword))]
+        tx (conj {:id new-id :account account-id :date (parse-date (params :date))} (update params :type keyword))]
     (swap! transactions-db conj tx)
     (swap! (get-in @accounts-db [account-id :tx-ids]) conj new-id)
     tx))
@@ -57,18 +75,18 @@
 (defn negative-balance
   [transactions account]
   (let [tx-ids (deref (get account :tx-ids))
-        account-txs (map (fn [id] (get transactions id)) tx-ids)]
+        account-txs (sort-by-date (map (fn [id] (get transactions id)) tx-ids))]
         (loop [remaining account-txs
                results []]
           (if (empty? remaining)
             results
             (do (let [tx (first remaining)
-                  date (get tx :date)
+                  date (unparse-date (tx :date))
                   next-remaining (rest remaining)
                   current-balance (compute-balance transactions (take (inc  (- (count tx-ids) (count remaining))) tx-ids))
-                  current { :principal (* current-balance -1) :start (tx :date)}
+                  current { :principal (format-float (* current-balance -1)) :start date}
                   next-results (if (< current-balance 0)
-                                 (conj results  current)
+                                 (conj results current)
                                  results)]
               (recur next-remaining next-results)))))))
 
@@ -85,16 +103,17 @@
           current (if (nil? next)
                     (do
                       (if (and (= i (count txs)) (pos? balance))
-                        (assoc tx :end (last-tx :date))
+                        (assoc tx :end (unparse-date (last-tx :date)))
                         tx))
                     (assoc tx :end (next :start)))
           next (get txs (inc i))
           next-results (conj results current)]
       (recur next-remaining next-results (inc i) next))))))
+
 (defn get-balance
   [tx-ids]
   (let [balance (if (empty? tx-ids) 0.00 (compute-balance @transactions-db tx-ids))]
-    (format "%.2f"  (float balance))))
+    (format-float  balance)))
 
 (defn negative-periods
   [transactions account]
@@ -107,17 +126,18 @@
 (defn build-statement
   [transactions account]
   (let [tx-ids (deref (get account :tx-ids))
-        account-txs (map (fn [id] (get transactions id)) tx-ids)]
+        account-txs (sort-by-date (map (fn [id] (get transactions id)) tx-ids))]
         (loop [remaining account-txs
                results {}]
           (if (empty? remaining)
             results
             (do (let [tx (first remaining)
-                  date (get tx :date)
+                  date (unparse-date (get tx :date))
                   next-remaining (rest remaining)
                   next-results (if (= (get results date) nil)
                             (conj results {date { :tx-ids (atom [(tx :id)]):transactions (atom [(string/join " " [(tx :description) (tx :amount)])]) }})
                             (do
+                              (println )
                               (swap! (get-in results [date :transactions]) conj (string/join " " [(tx :description) (tx :amount)]))
                               (swap! (get-in results [date :tx-ids]) conj (tx :id))
                               results))]
@@ -135,7 +155,7 @@
           results
           (do (let [tx (first remaining)
                 next-remaining (rest remaining)
-                next-results (conj results {(first tx) {:transactions (deref ((last tx) :transactions)) :balance (format "%.2f"  (float (get balances i)))}})]
+                next-results (conj results {(first tx) {:transactions (deref ((last tx) :transactions)) :balance (format-float (get balances i))}})]
           (recur next-remaining next-results (inc i))))))))
 
 (defn get-statement
