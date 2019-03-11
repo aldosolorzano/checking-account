@@ -18,7 +18,7 @@
     (build-response {:id (create-account @accounts-db)}))
 
   (context "/accounts/:id" [id]
-   (GET "/get-balance" [] (-> @accounts-db
+   (GET "/balance" [] (-> @accounts-db
                              (get-account-by-id id)
                              (get :tx-ids)
                              (deref)
@@ -30,7 +30,8 @@
 
     (GET "/negative-periods" [] (-> (negative-periods @transactions-db (get-account-by-id @accounts-db id))
                                     (build-response)))
-    (GET "/statement" [] (-> (get-statement @transactions-db (get-account-by-id @accounts-db id))
+
+    (POST "/statement" req (-> (get-statement @transactions-db (get-account-by-id @accounts-db id) (get-in req [:body]))
                                     (build-response))))
 
   (route/not-found "<h1>Page not found</h1>"))

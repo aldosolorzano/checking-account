@@ -15,9 +15,23 @@
   [date]
   (f/unparse custom-formatter (c/from-long date)))
 
+(defn parse-to-date-time
+  [date]
+  (t/date-time (t/year (c/from-long date)) (t/month (c/from-long date)) (t/day (c/from-long date))))
+
 (defn format-float
   [number]
     (format "%.2f"  (float number)))
+
+(defn within-dates?
+  [init end date]
+  (t/within? (t/interval (parse-to-date-time (parse-date init)) (parse-to-date-time (parse-date end)))
+              (parse-to-date-time (parse-date date))))
+
+(defn txs-within-dates
+  [transactions init end]
+  (flatten (filter (fn [tx] (within-dates? init end (first tx))) transactions)))
+
 
 (def accounts-db (atom {100 {:id 100 :tx-ids (atom [0 1 2 3 4 5 6])}
                      101 {:id 101 :tx-ids (atom [])}}))
@@ -51,8 +65,9 @@
   [transactions account-id params]
   (let [new-id (if (empty? transactions) 0 (inc (get (last transactions) :id)))
         tx (conj {:id new-id :account account-id :date (parse-date (params :date))} (update params :type keyword))]
-    (swap! transactions-db conj tx)
-    (swap! (get-in @accounts-db [account-id :tx-ids]) conj new-id)
+    (dosync ;Both txs need to be done to be accesible to other threads
+      (swap! transactions-db conj tx)
+      (swap! (get-in @accounts-db [account-id :tx-ids]) conj new-id))
     tx))
 
 (defn get-account-by-id
@@ -135,11 +150,11 @@
                   date (unparse-date (get tx :date))
                   next-remaining (rest remaining)
                   next-results (if (= (get results date) nil)
-                            (conj results {date { :tx-ids (atom [(tx :id)]):transactions (atom [(string/join " " [(tx :description) (tx :amount)])]) }})
+                            (conj results {date { :tx-ids (atom [(tx :id)]):transactions (atom [(string/join " " [(tx :description) (tx :amount)])])}})
                             (do
-                              (println )
-                              (swap! (get-in results [date :transactions]) conj (string/join " " [(tx :description) (tx :amount)]))
-                              (swap! (get-in results [date :tx-ids]) conj (tx :id))
+                              (dosync ;Both txs need to be done to be accesible to other threads
+                                (swap! (get-in results [date :transactions]) conj (string/join " " [(tx :description) (tx :amount)]))
+                                (swap! (get-in results [date :tx-ids]) conj (tx :id)))
                               results))]
               (recur next-remaining next-results)))))))
 
@@ -159,5 +174,7 @@
           (recur next-remaining next-results (inc i))))))))
 
 (defn get-statement
-  [transactions account]
-  (add-balance-to-statement @transactions-db (build-statement transactions account)))
+  [transactions account date-params]
+  (txs-within-dates
+   (add-balance-to-statement transactions (build-statement transactions account))
+   (date-params :init) (date-params :end)))
