@@ -1,38 +1,46 @@
 (ns checking-account.handler
   (:require   [checking-account.core :refer :all]
+              [checking-account.db :as db]
               [compojure.core :refer :all]
               [compojure.route :as route]
               [compojure.handler :as handler]
               [ring.middleware.json :as middleware]))
 
 (defn build-response
-  [params]
-  (let [response{:status 200
+  [params status]
+  (let [response{:status status
                  :headers {"Conten-Type" "application/json"}
                  :body params}]
     response))
 
+(defn account-finder ;Not pure
+  ([account-id f]
+   (account-finder account-id f nil))
+  ([account-id f req]
+  (let [account (get-account-by-id @db/accounts account-id)
+        status (if (nil? account) 422 200)
+        body (if (nil? account)
+                   {:errors "Account doesn't exists"}
+                   (do
+                     (if (nil? req)
+                      (f @db/transactions account)
+                      (f @db/transactions account req))))]
+    (build-response body status))))
+
 (defroutes app-routes
   (GET "/" [] "<h1>Checking Account</h1>")
   (POST "/accounts" []
-    (build-response {:id (create-account @accounts-db)}))
+    (build-response {:id (db/create-account)} 200))
 
   (context "/accounts/:id" [id]
-   (GET "/balance" [] (-> @accounts-db
-                             (get-account-by-id id)
-                             (get :tx-ids)
-                             (deref)
-                             (get-balance)
-                             (build-response)))
 
-    (POST "/transaction" req (-> (create-transaction @transactions-db (read-string id) (get-in req [:body]))
-                                 (build-response)))
+    (GET "/balance" [] (account-finder id get-balance))
 
-    (GET "/negative-periods" [] (-> (negative-periods @transactions-db (get-account-by-id @accounts-db id))
-                                    (build-response)))
+    (POST "/transaction" req (account-finder id db/create-transaction (get-in req [:body])))
 
-    (POST "/statement" req (-> (get-statement @transactions-db (get-account-by-id @accounts-db id) (get-in req [:body]))
-                                    (build-response))))
+    (GET "/negative-periods" [] (account-finder id negative-periods))
+
+    (POST "/statement" req (account-finder id get-statement (get-in req[:body]))))
 
   (route/not-found "<h1>Page not found</h1>"))
 
