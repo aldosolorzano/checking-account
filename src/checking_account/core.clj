@@ -2,7 +2,8 @@
   (:require   [checking-account.balance :as b]
               [checking-account.negative_periods :as np]
               [checking-account.date_helpers :as d]
-              [checking-account.statement :as st]))
+              [checking-account.statement :as st]
+              [checking-account.db :as db]))
 
 (defn get-account-by-id
   [accounts id]
@@ -20,7 +21,7 @@
   (np/add-end-to-negative-txs
    (b/negative-balances transactions account)
    (b/compute-balance transactions (deref (account :tx-ids)))
-   (last (d/sort-by-date (map (fn [id] (get transactions id)) (deref (account :tx-ids))))))
+   (last (db/account-txs account)))
   )
 
 (defn get-statement

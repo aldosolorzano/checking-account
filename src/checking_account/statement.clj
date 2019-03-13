@@ -2,12 +2,13 @@
   (:require [clojure.string :as string]
             [checking-account.balance :as b]
             [checking-account.date_helpers :as d]
+            [checking-account.db :as db]
             ))
 
 (defn build-statement
   [transactions account]
   (let [tx-ids (deref (get account :tx-ids))
-        account-txs (d/sort-by-date (map (fn [id] (get transactions id)) tx-ids))]
+        account-txs (db/account-txs account)]
         (loop [remaining account-txs
                results {}]
           (if (empty? remaining)

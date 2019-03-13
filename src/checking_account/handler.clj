@@ -30,7 +30,7 @@
 (defroutes app-routes
   (GET "/" [] "<h1>Checking Account</h1>")
   (POST "/accounts" []
-    (build-response {:id (db/create-account)} 200))
+    (build-response (db/create-account) 200))
 
   (context "/accounts/:id" [id]
 
