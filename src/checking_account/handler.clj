@@ -17,7 +17,7 @@
   ([account-id f]
    (account-finder account-id f nil))
   ([account-id f req]
-  (let [account (get-account-by-id @db/accounts account-id)
+  (let [account (db/get-account-by-id @db/accounts account-id)
         status (if (nil? account) 422 200)
         body (if (nil? account)
                    {:errors "Account doesn't exists"}

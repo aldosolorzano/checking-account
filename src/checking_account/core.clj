@@ -5,11 +5,6 @@
               [checking-account.statement :as st]
               [checking-account.db :as db]))
 
-(defn get-account-by-id
-  [accounts id]
-  (let [account (accounts (read-string (str id)))]
-    account))
-
 (defn get-balance
   [transactions account]
   (let [tx-ids (deref (account :tx-ids))

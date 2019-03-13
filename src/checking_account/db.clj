@@ -58,3 +58,8 @@
   [account]
   (-> (map (fn [id] (get @transactions id)) (deref (account :tx-ids)))
       (d/sort-by-date)))
+
+(defn get-account-by-id
+  [accounts id]
+  (let [account (accounts (read-string (str id)))]
+    account))
