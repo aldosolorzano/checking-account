@@ -23,10 +23,6 @@
   (t/within? (t/interval (parse-to-date-time (parse-date init)) (parse-to-date-time (parse-date end)))
               (parse-to-date-time (parse-date date))))
 
-(defn txs-within-dates
-  [transactions init end]
-  (flatten (filter (fn [tx] (within-dates? init end (first tx))) transactions)))
-
 (defn sort-by-date
   [transactions]
   (sort-by :date < transactions))

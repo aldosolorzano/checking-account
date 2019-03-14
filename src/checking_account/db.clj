@@ -4,15 +4,15 @@
 (def accounts (atom {100 {:id 100 :tx-ids (atom [0 1 2 3 4 5])}}))
 
 (def transactions (atom [{:id 0 :account 100 :description "Deposit"
-                          :amount 1000 :date (d/parse-date "15/10") :type :deposit}
+                          :amount 1000 :date (d/parse-date "11/10") :type :deposit}
                           {:id 1 :account 100 :description "Purchase on Amazon"
                             :amount 3.34 :date (d/parse-date "16/10") :type :purchase}
                           {:id 2 :account 100 :description "Purchase on Uber"
-                            :amount 45.23 :date (d/parse-date "16/10") :type :purchase}
+                            :amount 45.23 :date (d/parse-date "14/10") :type :purchase}
                           {:id 3 :account 100 :description "Withdrawal"
                             :amount 180 :date (d/parse-date "17/10") :type :withdrawal}
                           {:id 4 :account 100 :description "Purchase of a flight"
-                            :amount 800 :date (d/parse-date "18/10") :type :purchase}
+                            :amount 800 :date (d/parse-date "12/10") :type :purchase}
                           {:id 5 :account 100 :description "Purchase of a expresso"
                             :amount 10 :date (d/parse-date "22/10") :type :purchase}]))
 
@@ -45,6 +45,7 @@
 
 (defn create-transaction
   [txss account params]
+    ;TODO: add params validation
     (dosync ;Both txs need to be done to be accesible to other threads
       (let [txs (swap! transactions conj (build-tx account params))
             tx (last txs)
@@ -55,8 +56,8 @@
        res)))
 
 (defn account-txs
-  [account]
-  (-> (map (fn [id] (get @transactions id)) (deref (account :tx-ids)))
+  [transactions account]
+  (-> (map (fn [id] (get transactions id)) (deref (account :tx-ids)))
       (d/sort-by-date)))
 
 (defn get-account-by-id
