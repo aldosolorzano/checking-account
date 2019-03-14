@@ -1,7 +1,7 @@
 (ns checking-account.core
   (:require   [checking-account.balance :as b]
               [checking-account.negative-periods :as np]
-              [checking-account.date_helpers :as d]
+              [checking-account.date-helpers :as d]
               [checking-account.statement :as st]
               [checking-account.db :as db]))
 

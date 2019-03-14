@@ -3,7 +3,7 @@
             [checking-account.balance :refer :all]
             [checking-account.db :as db]
             [checking-account.db-fixture :as dbf]
-            [checking-account.date_helpers :as d]))
+            [checking-account.date-helpers :as d]))
 
 (deftest Format-float
   (testing "Compute balance given txs & tx-ids"

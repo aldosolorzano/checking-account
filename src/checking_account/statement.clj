@@ -1,7 +1,7 @@
 (ns checking-account.statement
   (:require [clojure.string :as string]
             [checking-account.balance :as b]
-            [checking-account.date_helpers :as d]
+            [checking-account.date-helpers :as d]
             [checking-account.db :as db]
             ))
 

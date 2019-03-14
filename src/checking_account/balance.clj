@@ -1,5 +1,5 @@
 (ns checking-account.balance
-  (:require [checking-account.date_helpers :as d]
+  (:require [checking-account.date-helpers :as d]
             [checking-account.db :as db]))
 
 (defn format-float

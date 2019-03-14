@@ -1,4 +1,4 @@
-(ns checking-account.date_helpers
+(ns checking-account.date-helpers
   (:require [clj-time.core :as t]
             [clj-time.local :as l]
             [clj-time.format :as f]

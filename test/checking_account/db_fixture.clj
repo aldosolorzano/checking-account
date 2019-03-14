@@ -1,5 +1,5 @@
 (ns checking-account.db-fixture
-  (:require [checking-account.date_helpers :as d]))
+  (:require [checking-account.date-helpers :as d]))
 
 (def accounts (atom {100 {:id 100 :tx-ids (atom [0 1 2 3 4 5 6])}}))
 

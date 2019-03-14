@@ -2,7 +2,7 @@
   (:require [clojure.test :refer :all]
             [checking-account.core :refer :all]
             [checking-account.db-fixture :as dbf]
-            [checking-account.date_helpers :as d]))
+            [checking-account.date-helpers :as d]))
 
 (deftest Get-balance
   (testing "Get Balance"
