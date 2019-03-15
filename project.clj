@@ -7,7 +7,9 @@
                  [compojure "1.6.1"]
                  [javax.servlet/servlet-api "2.5"]
                  [ring/ring-json "0.4.0"]
-                 [clj-time "0.15.0"]]
+                 [clj-time "0.15.0"]
+                 [cheshire "5.8.1"]
+                 [ring/ring-mock "0.3.2"]]
   :main ^:skip-aot checking-account.core
   :target-path "target/%s"
   :source-paths ["src"]

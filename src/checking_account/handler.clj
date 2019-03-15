@@ -9,7 +9,7 @@
 (defn build-response
   [params status]
   (let [response{:status status
-                 :headers {"Conten-Type" "application/json"}
+                 :headers {"Content-Type" "application/json"}
                  :body params}]
     response))
 
@@ -40,7 +40,7 @@
 
     (GET "/negative-periods" [] (account-finder id negative-periods))
 
-    (POST "/statement" req (account-finder id get-statement (get-in req[:body]))))
+    (POST "/statement" req (account-finder id get-statement (get-in req [:body]))))
 
   (route/not-found "<h1>Page not found</h1>"))
 

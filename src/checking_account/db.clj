@@ -48,8 +48,8 @@
     ;TODO: add params validation
     (dosync ;Both txs need to be done to be accesible to other threads
       (let [txs (swap! transactions conj (build-tx account params))
-            tx (last txs)
-            res (update tx :date d/unparse-date)] ;Keep tx locally and avoid id mismatch
+            tx (last txs) ;Keep tx locally and avoid id mismatch
+            res (update tx :date d/unparse-date)]
        (swap! (get-in @accounts [(account :id) :tx-ids]) conj (tx :id))
        (print "Transaction created: ")
        (println res)
