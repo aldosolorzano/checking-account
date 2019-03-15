@@ -16,9 +16,9 @@
           current (if (nil? next)
                     (do
                       (if (and (= i (count txs)) (pos? balance))
-                        (assoc tx :end (d/unparse-date (last-tx :date)))
+                        (assoc tx :end (d/dec-day (d/unparse-date (last-tx :date))))
                         tx))
-                    (assoc tx :end (next :start)))
+                    (assoc tx :end (d/dec-day(next :start))))
           next (get txs (inc i))
           next-results (conj results current)]
       (recur next-remaining next-results (inc i) next))))))

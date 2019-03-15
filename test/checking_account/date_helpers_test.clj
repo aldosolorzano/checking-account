@@ -40,3 +40,24 @@
   (is (false? (valid-date? "34/12")))
   (is (false? (valid-date? 123)))
   (is (false? (valid-date? nil))))
+
+(deftest Max-days-in-month
+  (testing "Validate given dates"
+    (is (= (max-days-in-month 2) 28))
+    (is (= (max-days-in-month 4) 30))
+    (is (= (max-days-in-month 5) 30))
+    (is (= (max-days-in-month 9) 30))
+    (is (= (max-days-in-month 11) 30))
+    (is (= (max-days-in-month 1) 31))
+    (is (= (max-days-in-month 3) 31))
+    (is (= (max-days-in-month 6) 31))
+    (is (= (max-days-in-month 7) 31))
+    (is (= (max-days-in-month 8) 31))
+    (is (= (max-days-in-month 12) 31))
+    ))
+
+(deftest Max-days-in-month
+  (testing "Validate given dates"
+    (is (= (dec-day "15/10") "14/10"))
+    (is (= (dec-day "01/12") "30/11"))
+    (is (= (dec-day "01/01") "31/12"))))
