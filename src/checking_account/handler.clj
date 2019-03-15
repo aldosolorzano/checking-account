@@ -4,6 +4,7 @@
               [compojure.core :refer :all]
               [compojure.route :as route]
               [compojure.handler :as handler]
+              [clojure.string :as string]
               [ring.middleware.json :as middleware]))
 
 (defn build-response
@@ -27,6 +28,17 @@
                       (f @db/transactions account req))))]
     (build-response body status))))
 
+(defn validate-params
+  [req expected]
+  (let [err (reduce
+             (fn [errors param]
+               (if (nil? (req param))
+                 (conj errors param)
+                  errors)) [] expected)]
+    (if (empty? err)
+      true
+      {:errors (string/join ", " (conj err "required. Add to body"))})))
+
 (defroutes app-routes
   (GET "/" [] "<h1>Checking Account</h1>")
   (POST "/accounts" []
@@ -36,11 +48,19 @@
 
     (GET "/balance" [] (account-finder id get-balance))
 
-    (POST "/transaction" req (account-finder id db/create-transaction (get-in req [:body])))
+    (POST "/transaction" req (let [body (get-in req [:body])
+                                   validation (validate-params (if (nil? body) {} body) [:description :date :amount :type])]
+                               (if (true? validation)
+                                 (account-finder id db/create-transaction body)
+                                 (build-response validation 422))))
 
     (GET "/negative-periods" [] (account-finder id negative-periods))
 
-    (POST "/statement" req (account-finder id get-statement (get-in req [:body]))))
+    (POST "/statement" req (let [body (get-in req [:body])
+                                   validation (validate-params (if (nil? body) {} body) [:init :end])]
+                               (if (true? validation)
+                                 (account-finder id get-statement body)
+                                 (build-response validation 422)))))
 
   (route/not-found "<h1>Page not found</h1>"))
 

@@ -23,6 +23,7 @@
                  :headers {"Content-Type" "text/html; charset=utf-8"}
                  :body    "<h1>Page not found</h1>"})))
   ;TODO Fix test to run with other files.
+
   ; (testing "Balance"
   ;   (is (= (app (mock/request :get "/accounts/100/balance"))
   ;               {:status  200
@@ -41,6 +42,16 @@
   ;                          "16/10" {"transactions" ["Purchase on Amazon 3.34"], "balance" "151.43"}
   ;                          "17/10" {"transactions" ["Withdrawal 180"], "balance" "-28.57"}
   ;                          "22/10" {"transactions" ["Purchase of a expresso 10"], "balance" "-38.57"}}}))
+  ;   (is (= (update (app (-> (mock/request :post "/accounts/100/statement")
+  ;                   (mock/json-body {:init "10/10"}))) :body parse-string true)
+  ;          {:status  422
+  ;           :headers {"Content-Type" "application/json"}
+  ;           :body {:errors ":end, required. Add to body"}}))
+  ;   ;No body given
+  ;   (is (= (update (app (mock/request :post "/accounts/100/statement")) :body parse-string true)
+  ;          {:status  422
+  ;           :headers {"Content-Type" "application/json"}
+  ;           :body {:errors ":init, :end, required. Add to body"}}))
   ;   (is (= (app (-> (mock/request :post "/accounts/10012/statement")
   ;                   (mock/json-body {:init "10/10" :end "27/10"})))
   ;          invalid-account)))
@@ -51,7 +62,7 @@
   ;                :headers {"Content-Type" "application/json"}
   ;                :body    dbf/negative-period-debt}))
   ;   (is (= (app (mock/request :get "/accounts/1234938373/negative-periods")) invalid-account)))
-
+  ;
   ; (testing "Create transaction"
   ;   (is (= (update (app (-> (mock/request :post "/accounts/100/transaction")
   ;                       (mock/json-body dbf/transaction-params)))
@@ -61,7 +72,20 @@
   ;                    :body (assoc
   ;                           (update
   ;                            (update dbf/expected-tx-body :date d/unparse-date) :type name) :id @db/tx-id)}))
-  ;   (is (= (app (mock/request :post "/accounts/1234938373/transaction")) invalid-account)))
+  ;   ;No body given
+  ;   (is (= (update (app (mock/request :post "/accounts/100/transaction"))
+  ;                  :body parse-string true)
+  ;                   {:status  422
+  ;                    :headers {"Content-Type" "application/json"}
+  ;                    :body {:errors ":description, :date, :amount, :type, required. Add to body"}}))
+  ;   (is (= (update (app (-> (mock/request :post "/accounts/100/transaction")
+  ;                   (mock/json-body {:description "Purchase" :amount 234}))) :body parse-string true)
+  ;          {:status  422
+  ;           :headers {"Content-Type" "application/json"}
+  ;           :body {:errors ":date, :type, required. Add to body"}}))
+  ;   (is (= (app (-> (mock/request :post "/accounts/100123/transaction")
+  ;                       (mock/json-body dbf/transaction-params)))
+  ;          invalid-account)))
 
   (testing "Create account"
     (is (= (update (app (mock/request :post "/accounts")) :body parse-string true)
@@ -81,12 +105,20 @@
               :body    {:errors "Invalid account"}}))))
 
 (deftest Account-finder
-
   ; (testing "Find account and build json response"
   ;   (is (= (account-finder dbf/account-id get-balance)
   ;          {:status  200
   ;           :headers {"Content-Type" "application/json"}
   ;           :body "-38.57"})))
+
   (testing "When given account is Invalid"
     (is (= (account-finder 234 get-balance)
            (update invalid-account :body parse-string true)))))
+
+(deftest Validate-params
+  (testing "Validate params"
+    (is (= (validate-params {} [:init :end])
+          {:errors ":init, :end, required. Add to body"}))
+    (is (validate-params {:inti "12/10" :end "11/10"} [:init :end]))
+    (is (= (validate-params {:amount 235 :type "deposit"} [:description :date :amount :type])
+          {:errors ":description, :date, required. Add to body"}))))
