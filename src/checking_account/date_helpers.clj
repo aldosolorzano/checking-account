@@ -1,4 +1,4 @@
-(ns checking-account.date_helpers
+(ns checking-account.date-helpers
   (:require [clj-time.core :as t]
             [clj-time.local :as l]
             [clj-time.format :as f]
@@ -22,10 +22,6 @@
   [init end date]
   (t/within? (t/interval (parse-to-date-time (parse-date init)) (parse-to-date-time (parse-date end)))
               (parse-to-date-time (parse-date date))))
-
-(defn txs-within-dates
-  [transactions init end]
-  (flatten (filter (fn [tx] (within-dates? init end (first tx))) transactions)))
 
 (defn sort-by-date
   [transactions]

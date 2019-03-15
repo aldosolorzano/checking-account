@@ -1,6 +1,6 @@
-(ns checking-account.negative_periods
+(ns checking-account.negative-periods
   (:require [checking-account.balance :as b]
-            [checking-account.date_helpers :as d]
+            [checking-account.date-helpers :as d]
             ))
 
 (defn add-end-to-negative-txs

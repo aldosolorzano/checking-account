@@ -1,5 +1,5 @@
 (ns checking-account.balance
-  (:require [checking-account.date_helpers :as d]
+  (:require [checking-account.date-helpers :as d]
             [checking-account.db :as db]))
 
 (defn format-float
@@ -19,27 +19,26 @@
     balance))
 
 (defn negative-balances
-  [transactions account]
-  (let [tx-ids (deref (get account :tx-ids))
-        account-txs (db/account-txs account)]
-        (loop [remaining account-txs
-               results []
-               prev-balance 0]
-          (if (empty? remaining)
-            results
-            (do (let [tx (first remaining)
-                  date (d/unparse-date (tx :date))
-                  next-remaining (rest remaining)
-                  current-balance (if (= (tx :type) :deposit)
-                                    (+ prev-balance (tx :amount))
-                                    (- prev-balance (tx :amount)))
-                  next-results (if (neg? current-balance)
-                                 (conj results {:principal (format-float (* current-balance -1)) :start date})
-                                 results)]
-              (recur next-remaining next-results current-balance)))))))
+  [transactions]
+  (loop [remaining transactions
+         results []
+         prev-balance 0]
+    (if (empty? remaining)
+      results
+      (do
+        (let [tx (first remaining)
+          date (d/unparse-date (tx :date))
+          next-remaining (rest remaining)
+          current-balance (if (= (tx :type) :deposit)
+                            (+ prev-balance (tx :amount))
+                            (- prev-balance (tx :amount)))
+          next-results (if (neg? current-balance)
+                         (conj results {:principal (format-float (* current-balance -1)) :start date})
+                         results)]
+        (recur next-remaining next-results current-balance))))))
 
 (defn add-balance-to-statement
-  [transactions statement]
+  [transactions statement date-params]
   (let [balances (reduce (fn [new tx]
                           (let [prev-balance (if (nil? (last new)) 0 (last new))]
                           (conj new (+ prev-balance(compute-balance transactions (deref ((last tx) :tx-ids))))))) [] statement)]
@@ -50,5 +49,8 @@
           results
           (do (let [tx (first remaining)
                 next-remaining (rest remaining)
-                next-results (conj results {(first tx) {:transactions (deref ((last tx) :transactions)) :balance (format-float (get balances i))}})]
+                date (first tx)
+                next-results (if (d/within-dates? (date-params :init) (date-params :end)  date)
+                               (conj results {date {:transactions (deref ((last tx) :transactions)) :balance (format-float (balances i))}})
+                               results)]
           (recur next-remaining next-results (inc i))))))))
