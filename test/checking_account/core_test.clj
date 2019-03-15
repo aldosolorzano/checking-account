@@ -21,4 +21,6 @@
   (testing "Build array with statement info"
       (is (= (get-statement @dbf/transactions (@dbf/accounts dbf/account-id) {:init "11/10" :end "26/10"}) dbf/full-statement))
       (is (= (get-statement @dbf/transactions (@dbf/accounts dbf/account-id) {:init "16/10" :end "23/10"}) dbf/between-dates-statement))
+      (is (= (get-statement @dbf/transactions (@dbf/accounts dbf/account-id) {:init 2 :end 1}) {:errors "Invalid date interval, try :init 11/10 :end 26/10"}))
+      (is (= (get-statement @dbf/transactions (@dbf/accounts dbf/account-id) {}) {:errors "Invalid date interval, try :init 11/10 :end 26/10"}))
       (is (empty? (get-statement @dbf/transactions dbf/fresh-account {:init "15/10" :end "23/10"})))))

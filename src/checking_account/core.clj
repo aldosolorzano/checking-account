@@ -20,4 +20,8 @@
 
 (defn get-statement
   [transactions account date-params]
-   (b/add-balance-to-statement transactions (st/build-statement transactions account) date-params))
+   (let [init (date-params :init)
+         end  (date-params :end)]
+     (if (and (d/valid-date? init) (d/valid-date? end))
+       (b/add-balance-to-statement transactions (st/build-statement transactions account) date-params)
+       {:errors "Invalid date interval, try :init 11/10 :end 26/10"})))
