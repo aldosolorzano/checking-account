@@ -18,6 +18,11 @@
   [date]
   (t/date-time (t/year (c/from-long date)) (t/month (c/from-long date)) (t/day (c/from-long date))))
 
+(defn valid-date?
+  [date]
+  (try (parse-date date)
+    (catch Exception e false)))
+
 (defn within-dates?
   [init end date]
   (t/within? (t/interval (parse-to-date-time (parse-date init)) (parse-to-date-time (parse-date end)))

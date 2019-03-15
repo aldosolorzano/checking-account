@@ -31,6 +31,7 @@
           (is (= @tx-id new-tx-id))
           (is (= tx-body dbf/expected-tx-body)))))
 
+(def invalid-params {:errors ":description, :date, :amount, :type, Invalid tx params"})
 (deftest Create-transaciton
   (testing "Create transaction"
     (let [new-tx-id (inc @tx-id)
@@ -38,12 +39,24 @@
           expected-tx (update (update dbf/expected-tx-body :date d/unparse-date) :id inc)]
           (is (= @tx-id new-tx-id))
           (is (= (last (deref (get-in @accounts [100 :tx-ids]))) new-tx-id))
-          (is (= new-tx expected-tx)))))
+          (is (= new-tx expected-tx))))
+  (testing "Create transaction with invalid params"
+    (is (= (create-transaction transactions (@accounts 100) (assoc dbf/transaction-params :date "123"))
+           {:errors ":date, Invalid tx params"}))
+    (is (= (create-transaction transactions (@accounts 100) {}) invalid-params))
+    (is (= (create-transaction transactions (@accounts 100) {:description 1 :amount "one" :date "11" :type 1324})
+           invalid-params))))
 
 (deftest Account-txs
   (testing "Get sorted account tx")
-  (is (= (account-txs @dbf/transactions dbf/account) dbf/account-txs)))
+    (is (= (account-txs @dbf/transactions dbf/account) dbf/account-txs)))
 
 (deftest Get-account-by-id
-  (testing "Get sorted account tx")
-  (is (= (update (get-account-by-id @dbf/accounts 100) :tx-ids deref) (update dbf/account :tx-ids deref))))
+  (testing "Get sorted account tx"
+    (is (= (update (get-account-by-id @dbf/accounts 100) :tx-ids deref) (update dbf/account :tx-ids deref)))))
+
+(deftest Valid-tx-params
+  (testing "Validate transaction params"
+    (is (empty? (errors-in-tx-params dbf/transaction-params)))
+    (is (= (errors-in-tx-params (assoc dbf/transaction-params :date "123")) [:date]))
+    (is (= (errors-in-tx-params {}) [:description :date :amount :type]))))

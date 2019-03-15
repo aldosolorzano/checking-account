@@ -1,5 +1,6 @@
 (ns checking-account.db
-  (:require [checking-account.date-helpers :as d]))
+  (:require [checking-account.date-helpers :as d]
+            [clojure.string :as string]))
 
 (def accounts (atom {100 {:id 100 :tx-ids (atom [0 1 2 3 4 5])}}))
 
@@ -43,17 +44,37 @@
             :type (keyword (params :type))}]
     tx))
 
+(defn errors-in-tx-params
+  [params]
+  (loop
+    [remaining [:description :date :amount :type]
+     errors []]
+    (if (empty? remaining) errors
+      (let [param (first remaining)
+            err (condp = param
+                  :description (if (not (string? (params param))) param false)
+                  :date (if (not (d/valid-date? (params param))) param false)
+                  :amount (if (not (number? (params param))) param false)
+                  :type (if (not (string? (params param))) param false))
+            next-errors (if (false? err) errors (conj errors err))]
+        (recur (rest remaining) next-errors)))))
+
 (defn create-transaction
-  [txss account params]
-    ;TODO: add params validation
-    (dosync ;Both txs need to be done to be accesible to other threads
-      (let [txs (swap! transactions conj (build-tx account params))
-            tx (last txs) ;Keep tx locally and avoid id mismatch
-            res (update tx :date d/unparse-date)]
-       (swap! (get-in @accounts [(account :id) :tx-ids]) conj (tx :id))
-       (print "Transaction created: ")
-       (println res)
-       res)))
+  [placeholder account params]
+    ; TODO remove placeholder, it is pased in handler.clj account-finder to valide account 
+    (let [param-errors (errors-in-tx-params params)
+          response (if (empty? param-errors)
+                (dosync ;Both txs need to be done to be accesible to other threads
+                  ; params must be valid for atom swap in case y has to recall the function
+                  (let [txs (swap! transactions conj (build-tx account params))
+                  tx (last txs) ;Keep tx locally and avoid id mismatch
+                  res (update tx :date d/unparse-date)]
+                  (swap! (get-in @accounts [(account :id) :tx-ids]) conj (tx :id))
+                  (print "Transaction created: ")
+                  (println res)
+                  res))
+                  {:errors (string/join ", " (conj param-errors "Invalid tx params"))})]
+      response))
 
 (defn account-txs
   [transactions account]

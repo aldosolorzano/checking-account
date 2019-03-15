@@ -31,3 +31,12 @@
 (deftest Sort-by-date
   (testing "Sort by date vector of txs : transactions date are float values"
     (sort-by-date @dbf/transactions) dbf/sort-transactions))
+
+(deftest Valid-date?
+  (testing "Validate given dates")
+  (is (valid-date? "15/12"))
+  (is (valid-date? "1/2"))
+  (is (false? (valid-date? "1")))
+  (is (false? (valid-date? "34/12")))
+  (is (false? (valid-date? 123)))
+  (is (false? (valid-date? nil))))
