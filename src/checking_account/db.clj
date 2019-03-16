@@ -61,7 +61,7 @@
 
 (defn create-transaction
   [placeholder account params]
-    ; TODO remove placeholder, it is pased in handler.clj account-finder to valide account 
+    ; TODO remove placeholder, it is pased in handler.clj account-finder to valide account
     (let [param-errors (errors-in-tx-params params)
           response (if (empty? param-errors)
                 (dosync ;Both txs need to be done to be accesible to other threads
