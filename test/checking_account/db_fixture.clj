@@ -44,13 +44,6 @@
 (def between-dates-statement {"16/10" {:transactions ["Purchase on Amazon 3.34"] :balance "151.43"}
   "17/10" {:transactions ["Withdrawal 180"] :balance "-28.57"}
   "22/10" {:transactions ["Purchase of a expresso 10"] :balance "-38.57"}})
-(def full-statement-no-balance {"11/10" {:tx-ids  (atom [0]), :transactions (atom ["Deposit 1000"])}
-  "12/10" {:tx-ids (atom [4]), :transactions (atom ["Purchase of a flight 800"])}
-  "14/10" {:tx-ids (atom [2]), :transactions (atom ["Purchase on Uber 45.23"])}
-  "16/10" {:tx-ids (atom [1]), :transactions (atom ["Purchase on Amazon 3.34"])}
-  "17/10" {:tx-ids (atom [3]), :transactions (atom ["Withdrawal 180"])}
-  "22/10" {:tx-ids (atom [5]), :transactions (atom ["Purchase of a expresso 10"])}
-  "25/10" {:tx-ids (atom [6]), :transactions (atom ["Deposit 50"])}})
 
 (def account-balance 11.43)
 (def account (get @accounts 100))
