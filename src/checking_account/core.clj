@@ -7,10 +7,8 @@
 
 (defn get-balance
   [transactions account]
-  (let [tx-ids (deref (account :tx-ids))
-        ; balance (if (empty? tx-ids) 0.00 (b/compute-balance transactions tx-ids))]
-        balance (b/compute-balance (db/account-txs transactions account))]
-    (b/format-float  balance)))
+  (-> (b/compute-balance (db/account-txs transactions account)
+      (b/format-float))))
 
 (defn negative-periods
   [transactions account]
@@ -24,5 +22,5 @@
    (let [init (date-params :init)
          end  (date-params :end)]
      (if (and (d/valid-date? init) (d/valid-date? end))
-       (st/build-statement transactions account date-params)
+       (st/build-statement (db/account-txs transactions account) date-params)
        {:errors "Invalid date interval, try :init 11/10 :end 26/10"})))
