@@ -2,11 +2,9 @@
   (:require
    [clojure.string :as string]
    [checking-account.balance :as b]
-   [checking-account.date-helpers :as d]
-   [checking-account.db :as db]))
+   [checking-account.date-helpers :as d]))
 
-(defn interval-statement
-  [date-params statement]
+(defn interval-statement [date-params statement]
   (let [{:keys [init end]} date-params]
     (into {} (filter #(d/within-dates? init end (first %)) statement))))
 
@@ -22,14 +20,12 @@
 (defn date-tx-body [[date txs]]
   {date (map desc-amount txs) :balance (b/format-float (:balance (last txs)))})
 
-(defn flatten-description
-  [statement]
+(defn flatten-description [statement]
   (map date-tx-body (seq statement)))
 
-(defn build-statement
- [transactions date-params]
- (->> (b/build-balances transactions add-balance)
-      (map #(update % :date d/unparse-date))
-      (group-by :date)
-      (interval-statement date-params)
-      (flatten-description)))
+(defn build-statement [transactions date-params]
+  (->> (b/build-balances transactions add-balance)
+       (map #(update % :date d/unparse-date))
+       (group-by :date)
+       (interval-statement date-params)
+       (flatten-description)))
