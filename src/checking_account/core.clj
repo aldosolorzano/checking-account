@@ -7,8 +7,8 @@
 
 (defn get-balance
   [transactions account]
-  (-> (b/compute-balance (db/account-txs transactions account)
-      (b/format-float))))
+  (-> (b/compute-balance (db/account-txs transactions account))
+      (b/format-float)))
 
 (defn negative-periods
   [transactions account]
@@ -20,4 +20,4 @@
          end  (date-params :end)]
      (if (and (d/valid-date? init) (d/valid-date? end))
        (st/build-statement (db/account-txs transactions account) date-params)
-       {:errors "Invalid date interval, try :init 11/10 :end 26/10"})))
+       {:errors "Invalid date interval, try :init 11/10/2019 :end 26/10/2019"})))
