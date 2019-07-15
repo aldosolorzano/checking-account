@@ -12,10 +12,7 @@
 
 (defn negative-periods
   [transactions account]
-  (np/add-end-to-negative-txs
-   (b/negative-balances (db/account-txs transactions account))
-   (b/compute-balance (db/account-txs transactions account))
-   (last (db/account-txs transactions account))))
+  (np/negative-periods (db/account-txs transactions account)))
 
 (defn get-statement
   [transactions account date-params]
