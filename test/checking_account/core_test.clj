@@ -3,8 +3,8 @@
             [checking-account.core :refer :all]
             [checking-account.date-helpers :as d]))
 
-(def fresh-account {:tx-ids (atom [])})
-(def account {:id 100 :tx-ids (atom [0 1 2 3])})
+(def fresh-account {:tx-ids (ref [])})
+(def account {:id 100 :tx-ids (ref [0 1 2 3])})
 (def transactions [{:id 0 :account 100 :description "Deposit"
                     :amount 1000 :date (d/parse-date "11/10/2019") :type :deposit}
                    {:id 1 :account 100 :description "Purchase on Amazon"
