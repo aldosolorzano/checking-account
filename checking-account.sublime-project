@@ -1,0 +1,13 @@
+{
+  "folders":
+  [
+    {
+      "file_exclude_patterns": ["*.sublime-workspace", "*.log", "*.orig", "Clojure REPL", "*lein*"],
+      "folder_exclude_patterns": ["resources", ".Xil", "target"],
+      "path": ".",
+      "follow_symlinks": true,
+      "tab_size": 2,
+      "translate_tabs_to_spaces": true,
+    }
+  ]
+}
