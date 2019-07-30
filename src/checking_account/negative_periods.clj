@@ -10,9 +10,10 @@
          :let [tx (get txs i)
                next-date (:start (get txs (inc i)))]
          :while (< i (count txs))]
-    (if-not (nil? next-date)
-      (assoc tx :end (d/dec-day next-date))
-      tx)))
+    (cond
+      (nil? next-date) tx
+      (= next-date (:start tx)) (assoc tx :end next-date)
+      :else (assoc tx :end (d/dec-day next-date)))))
 
 (defn build-period
   ([{:keys [amount date]}]

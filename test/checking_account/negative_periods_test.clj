@@ -19,6 +19,11 @@
 
 (deftest Add-end-date
   (testing "Add end date of the negative period using dec-day fn, except to last one"
+    (is (= (add-end-date txs) expected-txs)))
+  (testing "If start date equals nex-date, end should not apply dec-day"
+    (let [txs [{:principal -200 :start "28/12/2012"} {:principal -15 :start "28/12/2012"}]
+          expected-txs (seq [{:principal -200 :start "28/12/2012" :end "28/12/2012"}
+                             {:principal -15 :start "28/12/2012"}])])
     (is (= (add-end-date txs) expected-txs))))
 
 (def tx {:date (d/parse-date "28/12/2012") :amount 200})
