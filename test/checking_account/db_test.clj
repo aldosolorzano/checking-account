@@ -4,7 +4,7 @@
    [checking-account.db :refer :all]
    [checking-account.date-helpers :as d]))
 
-(def local-accounts [(get @accounts 100) (get @accounts 200)])
+(def main-account (get @accounts 100))
 
 (def tx {:description "Large purchase"
          :amount 500
@@ -23,12 +23,20 @@
 
 (deftest Build-tx
   (testing "building correct tx body"
-    (is (= (build-tx tx) valid-tx))))
+    (is (= (build-tx tx) valid-tx))
+    (is (= (build-tx (assoc tx :type "deposit")) (assoc valid-tx :amount 500 :type :deposit)))))
 
 
 (deftest Save-transaction
   (testing "saving transaction in atom"
-    (is (= (save-transaction {:tx-ids (ref [1 2])} tx) (conj [1 2] @tx-id)))))
+    (is (= (dissoc (save-transaction {:id 100 :tx-ids (ref [1 2])} tx) :id)
+           (assoc valid-tx :date "22/10/2019" :account 100)))))
+
+(deftest Create-transaction
+  (testing "Apply save-transaction & error validation"
+    (is (= (dissoc (create-transaction :_ main-account tx) :id)
+           (assoc valid-tx :date "22/10/2019" :account 100)))
+    (is (= (create-transaction :_ main-account {:amount 15}) {:errors '("Invalid tx params" :description :date :type)}))))
 
 (def account {:tx-ids (ref [1 2])})
 (def txs {1 {:date (d/parse-date "11/10/2019")}

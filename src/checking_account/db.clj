@@ -27,7 +27,7 @@
                             :account 100
                             :description "Withdrawal"
                             :amount -180
-                            :date (d/parse-date "17/10/2019")
+                            :date (d/parse-date "14/10/2019")
                             :type :withdrawal}
                          5 {:id 5
                             :account 100
@@ -65,7 +65,7 @@
 (defn build-tx [params]
   (let [{:keys [date amount type description]} params]
     {:date (d/parse-date date)
-    :amount (if (= type :deposit) amount (- amount))
+    :amount (if (.contains [:deposit "deposit"] type) amount (- amount))
     :description description
     :type (keyword type)}))
 
@@ -80,13 +80,14 @@
           tx (assoc (build-tx tx-params) :id id :account (:id account))]
      ; Use of alter to apply STM dependency rules
      (alter transactions conj {id tx})
-     (alter (:tx-ids account) conj id))))
+     (alter (:tx-ids account) conj id)
+     (update tx :date d/unparse-date))))
 
 (defn create-transaction [placeholder account params]
-  ; TODO remove placeholder, it is pased in handler.clj account-finder to valide account
+  ; TODO remove placeholder, it is passed in handler.clj account-finder to valide account
   (let [param-errors (errors-in-tx-params params)]
     (if (empty? param-errors)
-     (update (save-transaction account params) :date d/unparse-date)
+     (save-transaction account params)
      {:errors (conj param-errors "Invalid tx params")})))
 
 (defn account-txs [transactions account]
