@@ -14,7 +14,7 @@
                  :body params}]
     response))
 
-(defn account-finder ;Not pure
+(defn account-finder
   ([account-id f]
    (account-finder account-id f nil))
   ([account-id f req]

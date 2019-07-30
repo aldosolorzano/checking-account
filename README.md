@@ -6,14 +6,30 @@ or taking (purchases, withdrawals, debits) money at any given time.
 You can also check what is your current balance or your account statement,
 containing all operations that happened between two dates, along with the
 account's daily balance.
+
+## FIXES & CHANGES
+> I found out that my concurrency was a mess, it's really hard to keep track of the index in a vector when dealing with concurrency  in the system. My solution was very simple, store transactions in a hash-map and use a counter as an index generator. This way the tx-id stored in the account doesn't need to match with a specific index in the vector.
+
+> Most of the code was refactored, I tried to rely in functional style like map, reduce, apply and build a specific function following the same principles. This helped me to reuse a base function and send functions as parameter to extend its functionality.
+
+> Got rid of db_fixture.clj and include precise parameters per function. Readability was improved.
+
+> No need to reinvent the wheel with date-helpers. I changed the date library to one that is easier to use and has a decrease day function.
+
+> I was not able to fix full test suite including the handler tests, sometimes it works and some times it doesn't. Please got to de test section for more information.
+
+
 ## Solution
-I decided to store accounts in a nested map to be flexible with account numbers, each account contains a vector atom that keeps record of the transactions done by the account.
+I decided to store accounts in a nested map to be flexible with account numbers, each account contains a vector ref that keeps a record of the transactions done by the account.
 
-Transactions are a vector of maps contain the corresponding information.
+Transactions are stored in hash-map of maps containing the corresponding information.
 
-Both accounts and transactions are atoms to ensure it can run in a concurrent-safe way. To keep the next tx-id or account id, I created 2 global atoms contain each of the id's.
+Both accounts and transactions are ref's to ensure it can run in a concurrent-safe way and use alter to apply STM dependency rules.
 
-Every time a new account is created the atom is increased by one using swap to secure it from other threads. Also the new-tx-id is added to the account tx-ids atom, this transactions are done with a dosync too preserve same information and if one of them fails nothing is added to the data structure.
+To keep the next tx-id or account id, I created 2 global atoms contain each of the id's.
+
+Every time a new account is created the atom is increased by one using swap to secure it from other threads. Also the new-tx-id is added to the account tx-ids ref.
+
 ## Dependencies
 Clojure 1.10.0
 
@@ -80,65 +96,77 @@ The preloaded account is in negative balance, no end date included
 ``` json
 [
     {
+        "principal": "25.23",
+        "start": "14/10/2019",
+        "end": "15/10/2019"
+    },
+    {
         "principal": "28.57",
-        "start": "17/10",
-        "end": "21/10"
+        "start": "16/10/2019",
+        "end": "21/10/2019"
     },
     {
         "principal": "38.57",
-        "start": "22/10"
+        "start": "22/10/2019"
     }
 ]
 ```
 
 ### Statement - POST `/accounts/:id/statement`
 ``` json
-{ "init": "11/10", "end": "14/10" }
+{ "init": "11/10/2019", "end": "14/10/2019" }
 ```
 
 | Parameter | Description  |
 | --------- |------------- |
-| **init** | Inclusive initial date, only include day and month(example above).  |
-| **end**  | Exclusive end date. Example above will return dates until 13/10|
+| **init** | Inclusive initial date.  |
+| **end**  | Inclusive end date. |
 
 #### Response Body
 ##### status code - 200
 ``` json
-{
-    "11/10": {
-        "transactions": [
+[
+    {
+        "11/10/2019": [
             "Deposit 1000"
         ],
         "balance": "1000.00"
     },
-    "12/10": {
-        "transactions": [
-            "Purchase of a flight 800"
+    {
+        "12/10/2019": [
+            "Purchase of a flight -800"
         ],
         "balance": "200.00"
+    },
+    {
+        "14/10/2019": [
+            "Purchase on Uber -45.23",
+            "Withdrawal -180"
+        ],
+        "balance": "-25.23"
     }
-}
+]
 ```
 
 ### Create transaction - POST `/accounts/:id/transaction`
 ``` json
-{ "description": "Deposit", "amount": 100, "date": "25/10", "type": "deposit"}
+{ "description": "Deposit", "amount": 100, "date": "25/10/2019", "type": "deposit"}
 ```
 
 | Parameter | Description  |
 | --------- |------------- |
 | **description** | Brief description of transaction(string)|
 | **amount**  | Transaction amount(int or float)|
-| **date**  | Day and month of transaction|
+| **date**  | Day, month and year of transaction|
 | **type**  | Transactions are divided in three types deposit, purchase, withdrawal|
 
 #### Response Body
 ##### status code - 200
 ``` json
 {
-    "id": 6,
+    "id": 7,
     "account": 100,
-    "date": "25/10",
+    "date": "25/10/2019",
     "amount": 100,
     "description": "Deposit",
     "type": "deposit"
@@ -156,8 +184,8 @@ The preloaded account is in negative balance, no end date included
 lein test
 ```
 ### Bugs
-There is a bug with mock/compojure in the **test/checking_account/handler_test.clj** file, to run all tests inside the file please
-uncomment commented lines and run
+There is a bug with mock/compojure in the **test/checking_account/handler_test.clj** file, if running `lein test` fails, try running just the file with the command below, it will work correctly. Otherwise, try running the command `lein test` a couple more times.
+
 ```
 lein test test/checking_account/handler_test.clj
 ```

@@ -1,62 +1,56 @@
 (ns checking-account.db-test
-  (:require [clojure.test :refer :all]
-            [checking-account.db :refer :all]
-            [checking-account.date-helpers :as d]
-            [checking-account.db-fixture :as dbf]))
+  (:require
+   [clojure.test :refer :all]
+   [checking-account.db :refer :all]
+   [checking-account.date-helpers :as d]))
 
-(deftest Build-account
-  (testing "Build new account body"
-    (let [id 102
-          account-body (update-in (build-account id) [id :tx-ids] deref)]
-          (is (= account-body {id (update dbf/fresh-account :tx-ids deref)}))
-          (is (empty? (get-in account-body [id :tx-ids]))))))
+(def main-account (get @accounts 100))
 
-(deftest Create-account
-  (testing "Create account"
-    (let [new-account-id (inc @account-id)
-          new-account (create-account)]
-          (is (= @account-id new-account-id))
-          (is (= new-account {:id new-account-id})))
-    (let [new-account-id (inc @account-id)
-          new-account (create-account)]
-          (is (= @account-id new-account-id))
-          (is (= new-account {:id new-account-id})))))
+(def tx {:description "Large purchase"
+         :amount 500
+         :date "22/10/2019"
+         :type "purchase"})
+
+(deftest Errors-in-tx-params
+  (testing "validate each tx param applying validator fn, defined in file"
+    (is (= (errors-in-tx-params {:amount 15}) '(:description :date :type)))
+    (is (empty? (errors-in-tx-params tx)))))
+
+(def valid-tx {:date (d/parse-date "22/10/2019")
+               :amount -500
+               :description "Large purchase"
+               :type :purchase})
 
 (deftest Build-tx
-  (testing "Build tx body"
-    (let [account dbf/account
-          new-tx-id (inc @tx-id)
-          tx-body (build-tx account dbf/transaction-params)
-          expected-body (update (conj tx-body {:id new-tx-id :account (account :id)}) :type keyword)]
-          (is (= @tx-id new-tx-id))
-          (is (= tx-body dbf/expected-tx-body)))))
+  (testing "building correct tx body"
+    (is (= (build-tx tx) valid-tx))
+    (is (= (build-tx (assoc tx :type "deposit")) (assoc valid-tx :amount 500 :type :deposit)))))
 
-(def invalid-params {:errors ":description, :date, :amount, :type, Invalid tx params"})
-(deftest Create-transaciton
-  (testing "Create transaction"
-    (let [new-tx-id (inc @tx-id)
-          new-tx (create-transaction transactions (@accounts 100) dbf/transaction-params)
-          expected-tx (update (update dbf/expected-tx-body :date d/unparse-date) :id inc)]
-          (is (= @tx-id new-tx-id))
-          (is (= (last (deref (get-in @accounts [100 :tx-ids]))) new-tx-id))
-          (is (= new-tx expected-tx))))
-  (testing "Create transaction with invalid params"
-    (is (= (create-transaction transactions (@accounts 100) (assoc dbf/transaction-params :date "123"))
-           {:errors ":date, Invalid tx params"}))
-    (is (= (create-transaction transactions (@accounts 100) {}) invalid-params))
-    (is (= (create-transaction transactions (@accounts 100) {:description 1 :amount "one" :date "11" :type 1324})
-           invalid-params))))
+
+(deftest Save-transaction
+  (testing "saving transaction in atom"
+    (is (= (dissoc (save-transaction {:id 100 :tx-ids (ref [1 2])} tx) :id)
+           (assoc valid-tx :date "22/10/2019" :account 100)))))
+
+(deftest Create-transaction
+  (testing "Apply save-transaction & error validation"
+    (is (= (dissoc (create-transaction :_ main-account tx) :id)
+           (assoc valid-tx :date "22/10/2019" :account 100)))
+    (is (= (create-transaction :_ main-account {:amount 15}) {:errors '("Invalid tx params" :description :date :type)}))))
+
+(def account {:tx-ids (ref [1 2])})
+(def txs {1 {:date (d/parse-date "11/10/2019")}
+          2 {:date (d/parse-date "08/05/2019")}
+          3 {:date (d/parse-date "25/06/2019")}})
 
 (deftest Account-txs
-  (testing "Get sorted account tx")
-    (is (= (account-txs @dbf/transactions dbf/account) dbf/account-txs)))
+  (testing "return account transactions sorted"
+    (is (empty? (account-txs txs {:tx-ids (ref [])})))
+    (is (= (account-txs txs account) [{:date (d/parse-date "08/05/2019")}
+                                      {:date (d/parse-date "11/10/2019")}]))))
 
 (deftest Get-account-by-id
-  (testing "Get sorted account tx"
-    (is (= (update (get-account-by-id @dbf/accounts 100) :tx-ids deref) (update dbf/account :tx-ids deref)))))
-
-(deftest Valid-tx-params
-  (testing "Validate transaction params"
-    (is (empty? (errors-in-tx-params dbf/transaction-params)))
-    (is (= (errors-in-tx-params (assoc dbf/transaction-params :date "123")) [:date]))
-    (is (= (errors-in-tx-params {}) [:description :date :amount :type]))))
+  (testing "fetching account from accounts hash-map"
+    (is (= (get-account-by-id @accounts 100) (get @accounts 100)))
+    (is (= (get-account-by-id @accounts "100") (get @accounts 100)))
+    (is (nil? (get-account-by-id @accounts "500")))))

@@ -1,40 +1,18 @@
-(ns checking-account.balance
-  (:require [checking-account.date-helpers :as d]
-            [checking-account.db :as db]))
+(ns checking-account.balance)
 
-(defn format-float
-  [number]
+(defn format-float [number]
   (format "%.2f"  (float number)))
 
-(defn compute-balance
-  [transactions]
-  (loop [remaining transactions
-         balance 0]
-    (if (empty? remaining)
-      balance
-      (do
-        (let [tx (first remaining)
-          next-remaining (rest remaining)
-          current-balance (if (= (tx :type) :deposit)
-                            (+ balance (tx :amount))
-                            (- balance (tx :amount)))]
-        (recur next-remaining current-balance))))))
+(defn compute-balance [transactions]
+  (apply + (map :amount transactions)))
 
-(defn negative-balances
-  [transactions]
-  (loop [remaining transactions
-         results []
-         prev-balance 0]
-    (if (empty? remaining)
-      results
-      (do
-        (let [tx (first remaining)
-          date (d/unparse-date (tx :date))
-          next-remaining (rest remaining)
-          current-balance (if (= (tx :type) :deposit)
-                            (+ prev-balance (tx :amount))
-                            (- prev-balance (tx :amount)))
-          next-results (if (neg? current-balance)
-                         (conj results {:principal (format-float (* current-balance -1)) :start date})
-                         results)]
-        (recur next-remaining next-results current-balance))))))
+(defn conj-results [builder results tx]
+  (if (empty? results)
+   (conj results (builder tx))
+   (conj results (builder tx (last results)))))
+
+; transactions -> vector/sequence of transactions.
+; builder -> function that uses tx's body to return data. One or two args
+; returns a vector of the data given by the builder function.
+(defn build-balances [transactions builder]
+  (reduce #(conj-results builder % %2) [] transactions))
